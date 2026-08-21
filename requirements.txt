@@ -3,3 +3,4 @@ pydantic
 uvicorn
 pathlib
 pathlib
+python-multipart
