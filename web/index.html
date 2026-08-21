@@ -4,29 +4,25 @@
         <title>File-Manager</title>
         <link rel="stylesheet" href="/web/styles.css"/>
     </head>
-    <body>
+    <body data-page="home">
         <header>
             <h1 id="title">File-Manager</h1>
         </header>
 
         <nav>
-            <div id = "Media" onclick="load_page('/media')">
-                <img/>
+            <div class="nav-item" data-page="media">
                 <h3 id="media_title">Media</h3>
             </div>
-            <div id="db" onclick="load_page('/database')">
-                <img/>
-                <h3 id = "db_title">Database</h3>    
+            <div class="nav-item" data-page="database">
+                <h3 id="db_title">Database</h3>
             </div>
-            <div id="notes" onclick="load_page('/notes')">
-                <img/>
-                <h3 id = "notes_title">Notes</h3>    
+            <div class="nav-item" data-page="notes">
+                <h3 id="notes_title">Notes</h3>
             </div>
         </nav>
 
         <main>
-            <img/>
-            <h1>Wellcome to File-Manager!</h1>
+            <h1>Welcome to File-Manager!</h1>
             <p>User : marg_ghost</p>
         </main>
         <script src="/web/main.js"></script>
