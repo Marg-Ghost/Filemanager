@@ -101,7 +101,17 @@ async function load_media_list() {
         list.innerHTML = "";
         files.forEach((fileName) => {
             const item = document.createElement("li");
-            item.textContent = fileName;
+            const name = document.createElement("span");
+            name.textContent = fileName;
+
+            const link = document.createElement("a");
+            link.href = "/media_download/" + encodeURIComponent(fileName);
+            link.download = fileName;
+            link.textContent = "Download";
+            link.className = "download-link";
+
+            item.appendChild(name);
+            item.appendChild(link);
             list.appendChild(item);
         });
     } catch (e) {

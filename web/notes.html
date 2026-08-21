@@ -24,8 +24,12 @@
         <main>
             <section>
                 <textarea id="content"></textarea>
-                <button id="load-notes" type="button">Laden</button>
-                <button id="save-notes" type="button">Speichern</button>
+                <div class="button-row">
+                    <button id="load-notes" type="button">Laden</button>
+                    <button id="save-notes" type="button">Speichern</button>
+                    <a class="download-button" href="/notes_download" download>Notes als .txt herunterladen</a>
+                    <a class="download-button" href="/download_data" download>Alle Daten downloaden</a>
+                </div>
             </section>
         </main>
         <script src="/web/main.js"></script>

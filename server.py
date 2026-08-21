@@ -1,7 +1,9 @@
+from io import BytesIO
 from pathlib import Path
+from zipfile import ZipFile
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uvicorn
@@ -78,6 +80,51 @@ async def notes_load() -> dict:
 
     zettel = notes.main(0)
     return {"data": zettel}
+
+
+@app.get("/download_data")
+async def download_data():
+    zip_buffer = BytesIO()
+
+    with ZipFile(zip_buffer, "w") as archive:
+        if NOTES_FILE.exists():
+            archive.write(NOTES_FILE, arcname="notes/notes.txt")
+        if MEDIA_DIR.exists():
+            for file in sorted(MEDIA_DIR.iterdir()):
+                if file.is_file():
+                    archive.write(file, arcname=f"media/{file.name}")
+
+    zip_buffer.seek(0)
+    return StreamingResponse(
+        zip_buffer.read(),
+        media_type="application/zip",
+        headers={"Content-Disposition": 'attachment; filename="filemanager_data.zip"'},
+    )
+
+
+@app.get("/notes_download")
+async def notes_download():
+    if not NOTES_FILE.exists():
+        raise HTTPException(status_code=404, detail="No notes file found")
+
+    return FileResponse(
+        str(NOTES_FILE),
+        media_type="text/plain",
+        filename="notes.txt",
+    )
+
+
+@app.get("/media_download/{filename}")
+async def media_download(filename: str):
+    root = MEDIA_DIR.resolve()
+    file_path = (root / filename).resolve()
+
+    if root not in file_path.parents and file_path != root:
+        raise HTTPException(status_code=404, detail="File not found")
+    if not file_path.is_file():
+        raise HTTPException(status_code=404, detail="File not found")
+
+    return FileResponse(str(file_path), media_type="application/octet-stream", filename=filename)
 
 
 ###################
