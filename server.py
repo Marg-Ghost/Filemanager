@@ -1,13 +1,16 @@
+import os
+import secrets
 from io import BytesIO
 from pathlib import Path
 from zipfile import ZipFile
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+import dotenv
+from fastapi import Depends, FastAPI, File, HTTPException, UploadFile, status, APIRouter
 from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uvicorn
-import dotenv
 
 BASE_DIR = Path(__file__).resolve().parent
 WEB_DIR = BASE_DIR / "web"
@@ -15,35 +18,41 @@ DATA_DIR = BASE_DIR / "data"
 MEDIA_DIR = DATA_DIR / "medien"
 NOTES_FILE = DATA_DIR / "notes.txt"
 
+dotenv.load_dotenv()
+
 app = FastAPI()
-app.mount("/web", StaticFiles(directory=str(WEB_DIR)), name="web")
+security = HTTPBasic()
 
 def verify_password(credentials: HTTPBasicCredentials = Depends(security)):
-    correct_password = dotenv.PASSWORD
-    
-    # Timing-Attacken verhindern mit secrets.compare_digest
+    correct_password = os.getenv("PASSWORD", "standard_passwort")
+    correct_username = os.getenv("APP_USER")
+    is_user_correct = secrets.compare_digest(credentials.username, correct_username)    
     is_correct = secrets.compare_digest(credentials.password, correct_password)
     
-    if not is_correct:
+    if not (is_correct and is_user_correct):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Falsches Passwort",
             headers={"WWW-Authenticate": "Basic"},
         )
-    return credentials.password
+    return credentials.username
 
-@app.get("/")
+# dependencies=[Depends(verify_password)] schützt ALLE Endpunkte
+#app = FastAPI(dependencies=[Depends(verify_password)])
+
+protected = APIRouter()
+
+@protected.get("/")
 async def init_file_manager():
     file_path = WEB_DIR / "index.html"
     if not file_path.is_file():
         raise HTTPException(status_code=404, detail="index.html")
     return FileResponse(str(file_path))
 
-
 ###################
 ## Modes
 ###################
-@app.get("/media")
+@protected.get("/media")
 async def media_page():
     file_path = WEB_DIR / "media.html"
     if not file_path.is_file():
@@ -51,7 +60,7 @@ async def media_page():
     return FileResponse(str(file_path))
 
 
-@app.get("/database")
+@protected.get("/database")
 async def database_page():
     file_path = WEB_DIR / "database.html"
     if not file_path.is_file():
@@ -59,7 +68,7 @@ async def database_page():
     return FileResponse(str(file_path))
 
 
-@app.get("/notes")
+@protected.get("/notes")
 async def notes_page():
     file_path = WEB_DIR / "notes.html"
     if not file_path.is_file():
@@ -70,7 +79,7 @@ async def notes_page():
 ###################
 ## Load
 ###################
-@app.get("/media_load")
+@protected.get("/media_load")
 async def media_load() -> dict:
     import media
 
@@ -80,7 +89,7 @@ async def media_load() -> dict:
     return {"data": media_list}
 
 
-@app.get("/database_load/{db}/{table}")
+@protected.get("/database_load/{db}/{table}")
 async def database_load(db: str, table: str) -> dict:
     import database
 
@@ -88,7 +97,7 @@ async def database_load(db: str, table: str) -> dict:
     return {"framework": table_collums, "data": table_contend}
 
 
-@app.get("/notes_load")
+@protected.get("/notes_load")
 async def notes_load() -> dict:
     import notes
 
@@ -96,7 +105,7 @@ async def notes_load() -> dict:
     return {"data": zettel}
 
 
-@app.get("/download_data")
+@protected.get("/download_data")
 async def download_data():
     zip_buffer = BytesIO()
 
@@ -116,7 +125,7 @@ async def download_data():
     )
 
 
-@app.get("/notes_download")
+@protected.get("/notes_download")
 async def notes_download():
     if not NOTES_FILE.exists():
         raise HTTPException(status_code=404, detail="No notes file found")
@@ -128,7 +137,7 @@ async def notes_download():
     )
 
 
-@app.get("/media_download/{filename}")
+@protected.get("/media_download/{filename}")
 async def media_download(filename: str):
     root = MEDIA_DIR.resolve()
     file_path = (root / filename).resolve()
@@ -148,7 +157,7 @@ class Notes(BaseModel):
     content: str
 
 
-@app.post("/media_add")
+@protected.post("/media_add")
 async def media_add(file: UploadFile = File(...)) -> int:
     import media
 
@@ -156,7 +165,7 @@ async def media_add(file: UploadFile = File(...)) -> int:
     return status
 
 
-@app.post("/notes_save")
+@protected.post("/notes_save")
 async def notes_save(data_input: Notes) -> dict:
     import notes
 
@@ -166,6 +175,8 @@ async def notes_save(data_input: Notes) -> dict:
     except Exception:
         return {"status": 1}
 
+app.include_router(protected, dependencies=[Depends(verify_password)])
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=4300)
+
