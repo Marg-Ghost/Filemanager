@@ -95,6 +95,12 @@ main {
     gap: 20px;
 }
 
+body[data-page="home"] main {
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
 main > section {
     display: flex;
     flex-direction: column;
@@ -192,4 +198,8 @@ input[type="file"] {
     border: 1px solid #444444;
     border-radius: 8px;
     padding: 15px;
+}
+#img_logo{
+    max-width: 200px;
+    max-height: 300px;
 }
