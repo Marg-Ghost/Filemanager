@@ -2,23 +2,33 @@
 // manage Pages
 ///////////////////////
 
-async function load_page(type_page) {
-    const content = document.getElementById("content");
-    try {
-        const page = "/" + type_page;
-        const response = await fetch(page);
-        if (!response.ok) {
-            throw new Error(`HTTP-Fehler! Status: ${response.status}`);
-        }
-        const html = await response.text();
-        if (content) {
-            content.innerHTML = html;
-        }
-    } catch (e) {
-        if (content) {
-            content.innerText = `[Fehler] ${e.message}`;
-        }
+function getCurrentPageKey() {
+    const bodyPage = document.body.dataset.page;
+    if (bodyPage) {
+        return bodyPage;
     }
+
+    const path = window.location.pathname.replace("/", "") || "home";
+    return path;
+}
+
+function setActiveNavigation() {
+    const currentPage = getCurrentPageKey();
+
+    document.querySelectorAll(".nav-item").forEach((item) => {
+        const isActive = item.dataset.page === currentPage;
+        item.classList.toggle("active", isActive);
+    });
+}
+
+function bindNavigation() {
+    document.querySelectorAll(".nav-item").forEach((item) => {
+        item.addEventListener("click", () => {
+            const target = item.dataset.page;
+            const page = target === "home" ? "/" : "/" + target;
+            window.location.href = page;
+        });
+    });
 }
 
 ///////////////////////
@@ -91,7 +101,17 @@ async function load_media_list() {
         list.innerHTML = "";
         files.forEach((fileName) => {
             const item = document.createElement("li");
-            item.textContent = fileName;
+            const name = document.createElement("span");
+            name.textContent = fileName;
+
+            const link = document.createElement("a");
+            link.href = "/media_download/" + encodeURIComponent(fileName);
+            link.download = fileName;
+            link.textContent = "Download";
+            link.className = "download-link";
+
+            item.appendChild(name);
+            item.appendChild(link);
             list.appendChild(item);
         });
     } catch (e) {
@@ -143,6 +163,9 @@ async function upload_media() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+    bindNavigation();
+    setActiveNavigation();
+
     const saveButton = document.getElementById("save-notes");
     if (saveButton) {
         saveButton.addEventListener("click", save_notes);
