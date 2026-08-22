@@ -133,7 +133,7 @@ button:hover,
 
 textarea#content {
     width: 100%;
-    min-height: 300px;
+    min-height: 800px;
     background-color: #222222;
     color: #fdfcfd;
     border: 1px solid #ffffff;
