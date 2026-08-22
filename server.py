@@ -7,6 +7,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import uvicorn
+import dotenv
 
 BASE_DIR = Path(__file__).resolve().parent
 WEB_DIR = BASE_DIR / "web"
@@ -17,6 +18,19 @@ NOTES_FILE = DATA_DIR / "notes.txt"
 app = FastAPI()
 app.mount("/web", StaticFiles(directory=str(WEB_DIR)), name="web")
 
+def verify_password(credentials: HTTPBasicCredentials = Depends(security)):
+    correct_password = dotenv.PASSWORD
+    
+    # Timing-Attacken verhindern mit secrets.compare_digest
+    is_correct = secrets.compare_digest(credentials.password, correct_password)
+    
+    if not is_correct:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Falsches Passwort",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return credentials.password
 
 @app.get("/")
 async def init_file_manager():
