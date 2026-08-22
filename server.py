@@ -23,10 +23,12 @@ dotenv.load_dotenv()
 app = FastAPI()
 security = HTTPBasic()
 
+app.mount("/web", StaticFiles(directory=WEB_DIR), name="web")
+
 def verify_password(credentials: HTTPBasicCredentials = Depends(security)):
     correct_password = os.getenv("PASSWORD", "standard_passwort")
-    correct_username = os.getenv("APP_USER")
-    is_user_correct = secrets.compare_digest(credentials.username, correct_username)    
+    correct_username = os.getenv("APP_USER", "")
+    is_user_correct = secrets.compare_digest(credentials.username, correct_username)
     is_correct = secrets.compare_digest(credentials.password, correct_password)
     
     if not (is_correct and is_user_correct):
@@ -42,7 +44,7 @@ def verify_password(credentials: HTTPBasicCredentials = Depends(security)):
 
 protected = APIRouter()
 
-@protected.get("/")
+@app.get("/")
 async def init_file_manager():
     file_path = WEB_DIR / "index.html"
     if not file_path.is_file():
@@ -52,7 +54,7 @@ async def init_file_manager():
 ###################
 ## Modes
 ###################
-@protected.get("/media")
+@app.get("/media")
 async def media_page():
     file_path = WEB_DIR / "media.html"
     if not file_path.is_file():
@@ -60,7 +62,7 @@ async def media_page():
     return FileResponse(str(file_path))
 
 
-@protected.get("/database")
+@app.get("/database")
 async def database_page():
     file_path = WEB_DIR / "database.html"
     if not file_path.is_file():
@@ -68,7 +70,7 @@ async def database_page():
     return FileResponse(str(file_path))
 
 
-@protected.get("/notes")
+@app.get("/notes")
 async def notes_page():
     file_path = WEB_DIR / "notes.html"
     if not file_path.is_file():
