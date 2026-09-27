@@ -3,3 +3,4 @@ pydantic
 uvicorn
 python-multipart
 python-dotenv
+httpx
